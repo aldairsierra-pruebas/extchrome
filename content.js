@@ -132,6 +132,12 @@
     const statusText = root.querySelector('#odis-status-text');
     const logEl = root.querySelector('#odis-log');
 
+    if(root.dataset.bound === '1'){
+      sidebar.classList.remove('odis-hidden');
+      return;
+    }
+    root.dataset.bound = '1';
+
     sidebar.classList.remove('odis-hidden');
 
     function log(msg){
@@ -140,7 +146,7 @@
       logEl.prepend(p);
     }
 
-    btnClose.addEventListener('click', ()=>{ sidebar.style.display='none'; });
+    btnClose.addEventListener('click', ()=>{ sidebar.classList.add('odis-hidden'); });
 
     btnInit.addEventListener('click', ()=>{
       const raw = textarea.value.trim();
@@ -148,7 +154,7 @@
       const closeTab = !!chkClose.checked;
       const delayMs = Math.max(0, Number(closeDelayInput.value) || 60) * 1000;
       chrome.runtime.sendMessage({ action:'init', raw, closeTab, closeDelayMs: delayMs }, (resp) => {
-        statusText.textContent = `Cola cargada (${raw.split('\\n').length})`;
+        statusText.textContent = `Cola cargada (${raw.split('\n').length})`;
         btnNext.disabled = false;
         log('Cola cargada');
       });
