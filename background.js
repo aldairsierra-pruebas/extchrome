@@ -106,7 +106,21 @@ async function processRow(row){
   // Delay manual 4s so you can open a field manually
   await new Promise(r => setTimeout(r, MANUAL_DELAY_MS));
 
+  await ensureContentScriptLoaded(originTabId);
   await sendMessageWithRetry(originTabId, { action:'fillRow', row });
+}
+
+
+
+async function ensureContentScriptLoaded(tabId){
+  try{
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['content.js']
+    });
+  } catch(error){
+    console.warn('No se pudo inyectar content.js (puede ya estar activo):', error);
+  }
 }
 
 async function sendMessageWithRetry(tabId, payload, retries = 6){

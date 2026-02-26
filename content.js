@@ -65,9 +65,14 @@
     return findFn();
   }
 
-  async function setValueByXPath(xpath, value){
+  async function setValueByXPath(xpath, value, options = {}){
     const el = await smartScrollSearch(()=> $x(xpath));
-    if(!el){ console.warn('No encontrado tras scroll:', xpath); return false; }
+    if(!el){
+      if(!options.silent){
+        console.warn('No encontrado tras scroll:', xpath);
+      }
+      return false;
+    }
     try{ el.value = value; el.setAttribute('value', value); }catch(e){}
     dispatchEvents(el);
     return true;
@@ -85,6 +90,61 @@
     const el = await smartScrollSearch(()=> $x(xpath));
     if(!el){ console.warn('No encontrado para click tras scroll:', xpath); return false; }
     try{ el.click(); }catch(e){ try{ el.dispatchEvent(new MouseEvent('click',{bubbles:true})); }catch(_){} }
+    return true;
+  }
+
+
+  function normalizeText(value){
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '')
+      .trim();
+  }
+
+  function findInputByHints(hints = []){
+    const normalizedHints = hints.map(normalizeText).filter(Boolean);
+    if(!normalizedHints.length) return null;
+
+    const fields = [...document.querySelectorAll('input, textarea')].filter(el => {
+      const type = (el.type || '').toLowerCase();
+      return type !== 'hidden' && type !== 'radio' && !el.disabled && !el.readOnly;
+    });
+
+    for(const field of fields){
+      const attrsText = normalizeText([
+        field.placeholder,
+        field.name,
+        field.id,
+        field.getAttribute('aria-label'),
+        field.getAttribute('formcontrolname')
+      ].filter(Boolean).join(' '));
+
+      const labelNode = field.closest('mat-form-field, .form-group, .mat-form-field')?.querySelector('mat-label,label,.mat-form-field-label');
+      const labelText = normalizeText(labelNode?.textContent || '');
+      const previousLabel = normalizeText(field.previousElementSibling?.textContent || '');
+      const haystack = `${attrsText} ${labelText} ${previousLabel}`;
+
+      if(normalizedHints.some(h => haystack.includes(h))){
+        return field;
+      }
+    }
+
+    return null;
+  }
+
+  async function setValueSmart(xpath, value, hints = []){
+    const directSet = await setValueByXPath(xpath, value, { silent: true });
+    if(directSet) return true;
+
+    const fallback = await smartScrollSearch(() => findInputByHints(hints), 8000);
+    if(!fallback){
+      console.warn('No encontrado campo por xpath ni por hints:', xpath, hints);
+      return false;
+    }
+
+    try{ fallback.value = value; fallback.setAttribute('value', value); }catch(e){}
+    dispatchEvents(fallback);
     return true;
   }
 
@@ -197,19 +257,20 @@
       return true;
     }
     if(msg.action === 'fillRow' && Array.isArray(msg.row)){
+      sendResp({ ok:true });
       (async ()=>{
         const row = msg.row;
         try{
           const [, empresa, numCliente, nombreCliente, telefono, latlng, codigo] = row;
           // wait a bit for DOM
           await sleep(600);
-          try{ await setValueByXPath(X.col1, empresa || ''); } catch(e){ console.warn('set col1', e); }
-          try{ await setValueByXPath(X.col2, numCliente || ''); } catch(e){}
-          try{ await setValueByXPath(X.col3, nombreCliente || ''); } catch(e){}
-          try{ await setValueByXPath(X.col4, telefono || ''); } catch(e){}
-          try{ await setValueByXPath(X.col5_address, latlng || ''); } catch(e){}
-          try{ await setValueByXPath(X.col6_a, codigo || ''); } catch(e){}
-          try{ await setValueByXPath(X.col6_b, codigo || ''); } catch(e){}
+          try{ await setValueSmart(X.col1, empresa || '', ['empresa', 'compania']); } catch(e){ console.warn('set col1', e); }
+          try{ await setValueSmart(X.col2, numCliente || '', ['cliente', 'numero cliente', 'num cliente']); } catch(e){}
+          try{ await setValueSmart(X.col3, nombreCliente || '', ['nombre cliente', 'cliente']); } catch(e){}
+          try{ await setValueSmart(X.col4, telefono || '', ['telefono', 'celular', 'movil']); } catch(e){}
+          try{ await setValueSmart(X.col5_address, latlng || '', ['direccion', 'coordenadas', 'lat']); } catch(e){}
+          try{ await setValueSmart(X.col6_a, codigo || '', ['codigo']); } catch(e){}
+          try{ await setValueSmart(X.col6_b, codigo || '', ['codigo']); } catch(e){}
 
           // clicks
           try{ await clickByXPath(X.radio_si_13); } catch(e){}
@@ -248,7 +309,7 @@
           try{ chrome.runtime.sendMessage({ action:'contentDone', error:String(err) }); }catch(e){}
         }
       })();
-      return true;
+      return;
     }
   });
 
