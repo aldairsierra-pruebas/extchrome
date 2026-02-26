@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "ODIS Autofill Sidebar (Single Tab Manual)",
+  "version": "0.3",
+  "description": "Manual sidebar autofill that reuses the same tab and waits 4s before filling.",
+  "permissions": [
+    "scripting",
+    "tabs",
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://odisdkp.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://odisdkp.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "sidebar.html",
+        "sidebar.css"
+      ],
+      "matches": [
+        "https://odisdkp.com/*"
+      ]
+    }
+  ]
+}

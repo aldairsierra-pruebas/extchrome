@@ -1,0 +1,26 @@
+
+<div id="odis-autofill-sidebar" style="all:initial">
+  <style>@import url('sidebar.css');</style>
+  <div id="odis-sidebar" class="odis-hidden">
+    <div class="odis-header">
+      <strong>ODIS Autofill — Manual</strong>
+      <button id="odis-close" title="Cerrar panel">✕</button>
+    </div>
+    <div class="odis-body">
+      <label>Pega filas (1 por línea, TAB entre columnas)</label>
+      <textarea id="odis-rows" placeholder="URL[TAB]Empresa[TAB]NumCliente[TAB]Nombre[TAB]Tel[TAB]LatLng[TAB]Codigo"></textarea>
+      <div class="odis-row">
+        <label><input type="checkbox" id="odis-close-tab"> Cerrar pestaña al terminar</label>
+        <label style="margin-left:auto">Delay cierre (s): <input id="odis-close-delay" type="number" min="0" value="60" style="width:60px"></label>
+      </div>
+      <div class="odis-controls">
+        <button id="odis-init">Cargar</button>
+        <button id="odis-next" disabled>► Siguiente</button>
+        <button id="odis-abort">Abortar</button>
+      </div>
+      <div id="odis-status"><strong>Estado:</strong> <span id="odis-status-text">Inactivo</span></div>
+      <div id="odis-log"></div>
+    </div>
+    <div class="odis-footer">Manual lateral — pulsa <em>Siguiente</em> para avanzar.</div>
+  </div>
+</div>
